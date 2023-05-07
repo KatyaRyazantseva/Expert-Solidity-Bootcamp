@@ -54,38 +54,13 @@ uint256 public totalSupply = 0; // cannot be updated
     event AddedToWhitelist(address userAddress, uint256 tier);
 
     modifier onlyAdminOrOwner() {
-        address senderOfTx = msg.sender;
-        if (checkForAdmin(senderOfTx)) {
-            require(
-                checkForAdmin(senderOfTx),
-                "Gas Contract Only Admin Check-  Caller not admin"
-            );
-            _;
-        } else if (senderOfTx == contractOwner) {
-            _;
-        } else {
-            revert(
-                "Error in Gas contract - onlyAdminOrOwner modifier : revert happened because the originator of the transaction was not the admin, and furthermore he wasn't the owner of the contract, so he cannot run this function"
-            );
-        }
+        require((checkForAdmin(msg.sender) || msg.sender == contractOwner), "not the admin or owner");
+        _; 
     }
 
-    modifier checkIfWhiteListed(address sender) {
-        address senderOfTx = msg.sender;
-        require(
-            senderOfTx == sender,
-            "Gas Contract CheckIfWhiteListed modifier : revert happened because the originator of the transaction was not the sender"
-        );
-        uint256 usersTier = whitelist[senderOfTx];
-        require(
-            usersTier > 0,
-            "Gas Contract CheckIfWhiteListed modifier : revert happened because the user is not whitelisted"
-        );
-        require(
-            usersTier < 4,
-            "Gas Contract CheckIfWhiteListed modifier : revert happened because the user's tier is incorrect, it cannot be over 4 as the only tier we have are: 1, 2, 3; therfore 4 is an invalid tier for the whitlist of this contract. make sure whitlist tiers were set correctly"
-        );
-        _;
+    modifier checkIfWhiteListed() {
+        require(whitelist[msg.sender] > 0,"sender is not whitelisted");
+        _;  
     }
 
     event supplyChanged(address indexed, uint256 indexed);
@@ -121,13 +96,11 @@ uint256 public totalSupply = 0; // cannot be updated
 
 
     function checkForAdmin(address _user) public view returns (bool admin_) {
-        bool admin = false;
         for (uint256 ii = 0; ii < administrators.length; ii++) {
             if (administrators[ii] == _user) {
-                admin = true;
+                return admin_ = true;
             }
         }
-        return admin;
     }
 
     function balanceOf(address _user) public view returns (uint256 balance_) {
@@ -263,7 +236,7 @@ uint256 public totalSupply = 0; // cannot be updated
     function whiteTransfer(
         address _recipient,
         uint256 _amount
-    ) public checkIfWhiteListed(msg.sender) {
+    ) public checkIfWhiteListed() {
         address senderOfTx = msg.sender;
         whiteListStruct[senderOfTx] = ImportantStruct(true, _amount, 0, 0, 0, msg.sender);
         
