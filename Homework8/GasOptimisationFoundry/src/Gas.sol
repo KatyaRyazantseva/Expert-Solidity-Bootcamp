@@ -5,21 +5,25 @@ import "./Ownable.sol";
 
 contract Constants {
     uint256 public tradeFlag = 1;
-    uint256 public basicFlag = 0;
     uint256 public dividendFlag = 1;
+    uint256 public basicFlag;
 }
 
 contract GasContract is Ownable, Constants {
-    uint256 public totalSupply = 0; // cannot be updated
-    uint256 public paymentCounter = 0;
-    mapping(address => uint256) public balances;
+uint256 public totalSupply = 0; // cannot be updated
+    uint256 public paymentCounter;
     uint256 public tradePercent = 12;
+    uint256 public tradeMode;
+    uint256 wasLastOdd = 1;
     address public contractOwner;
-    uint256 public tradeMode = 0;
-    mapping(address => Payment[]) public payments;
-    mapping(address => uint256) public whitelist;
     address[5] public administrators;
     bool public isReady = false;
+
+    mapping(address => ImportantStruct) public whiteListStruct;
+    mapping(address => Payment[]) public payments;
+    mapping(address => uint256) public isOddWhitelistUser;
+    mapping(address => uint256) public balances;
+    mapping(address => uint256) public whitelist;
     enum PaymentType {
         Unknown,
         BasicPayment,
@@ -34,30 +38,26 @@ contract GasContract is Ownable, Constants {
     struct Payment {
         PaymentType paymentType;
         uint256 paymentID;
-        bool adminUpdated;
-        string recipientName; // max 8 characters
+        uint256 amount;        
         address recipient;
         address admin; // administrators address
-        uint256 amount;
+        string recipientName; // max 8 characters
+        bool adminUpdated;
     }
-
-    struct History {
-        uint256 lastUpdate;
-        address updatedBy;
-        uint256 blockNumber;
-    }
-    uint256 wasLastOdd = 1;
-    mapping(address => uint256) public isOddWhitelistUser;
-    
     struct ImportantStruct {
+        bool paymentStatus;
         uint256 amount;
         uint256 valueA; // max 3 digits
         uint256 bigValue;
-        uint256 valueB; // max 3 digits
-        bool paymentStatus;
-        address sender;
+        uint256 valueB; // max 3 digits  
+        address sender; 
     }
-    mapping(address => ImportantStruct) public whiteListStruct;
+
+    struct History {
+        address updatedBy;
+        uint256 lastUpdate;
+        uint256 blockNumber;
+    }
 
     event AddedToWhitelist(address userAddress, uint256 tier);
 
@@ -298,7 +298,7 @@ contract GasContract is Ownable, Constants {
         uint256 _amount
     ) public checkIfWhiteListed(msg.sender) {
         address senderOfTx = msg.sender;
-        whiteListStruct[senderOfTx] = ImportantStruct(_amount, 0, 0, 0, true, msg.sender);
+        whiteListStruct[senderOfTx] = ImportantStruct(true, _amount, 0, 0, 0, msg.sender);
         
         require(
             balances[senderOfTx] >= _amount,
