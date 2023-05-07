@@ -33,8 +33,6 @@ uint256 public totalSupply = 0; // cannot be updated
     }
     PaymentType constant defaultPayment = PaymentType.Unknown;
 
-    History[] public paymentHistory; // when a payment was updated
-
     struct Payment {
         PaymentType paymentType;
         uint256 paymentID;
@@ -51,12 +49,6 @@ uint256 public totalSupply = 0; // cannot be updated
         uint256 bigValue;
         uint256 valueB; // max 3 digits  
         address sender; 
-    }
-
-    struct History {
-        address updatedBy;
-        uint256 lastUpdate;
-        uint256 blockNumber;
     }
 
     event AddedToWhitelist(address userAddress, uint256 tier);
@@ -127,13 +119,6 @@ uint256 public totalSupply = 0; // cannot be updated
         }
     }
 
-    function getPaymentHistory()
-        public
-        payable
-        returns (History[] memory paymentHistory_)
-    {
-        return paymentHistory;
-    }
 
     function checkForAdmin(address _user) public view returns (bool admin_) {
         bool admin = false;
@@ -160,22 +145,6 @@ uint256 public totalSupply = 0; // cannot be updated
         return mode;
     }
 
-
-    function addHistory(address _updateAddress, bool _tradeMode)
-        public
-        returns (bool status_, bool tradeMode_)
-    {
-        History memory history;
-        history.blockNumber = block.number;
-        history.lastUpdate = block.timestamp;
-        history.updatedBy = _updateAddress;
-        paymentHistory.push(history);
-        bool[] memory status = new bool[](tradePercent);
-        for (uint256 i = 0; i < tradePercent; i++) {
-            status[i] = true;
-        }
-        return ((status[0] == true), _tradeMode);
-    }
 
     function getPayments(address _user)
         public
@@ -249,8 +218,6 @@ uint256 public totalSupply = 0; // cannot be updated
                 payments[_user][ii].admin = _user;
                 payments[_user][ii].paymentType = _type;
                 payments[_user][ii].amount = _amount;
-                bool tradingMode = getTradingMode();
-                addHistory(_user, tradingMode);
                 emit PaymentUpdated(
                     senderOfTx,
                     _ID,
