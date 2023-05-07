@@ -36,14 +36,6 @@ contract GasContract {
         }
     }
 
-    function _onlyAdminOrOwner() internal view {
-        unchecked {
-            if (!_administrators[msg.sender] || msg.sender != contractOwner) {
-                revert(); // E0(msg.sender);
-            }
-        }
-    }
-
     function balanceOf(address _user) public view returns (uint256 balance_) {
         return balances[_user];
     }
@@ -68,9 +60,11 @@ contract GasContract {
 
     function addToWhitelist(address _userAddrs, uint256 _tier) public {
         unchecked {
-            _onlyAdminOrOwner();
             if (_tier > 254) {
                 revert(); // E3(_tier);
+            }
+            if (!_administrators[msg.sender] || msg.sender != contractOwner) {
+                revert(); // E0(msg.sender);
             }
             uint256 temp = _tier;
             if (_tier > 3) {
