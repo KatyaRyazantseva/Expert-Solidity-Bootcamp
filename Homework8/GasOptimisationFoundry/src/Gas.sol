@@ -23,12 +23,12 @@ contract GasContract {
     // error E3(uint256 tier); //TIER ERROR
 
     constructor(address[] memory _admins, uint256 _totalSupply) {
+        // assembly {
+        //     mstore(0, caller())
+        //     mstore(0x20, 0)
+        //     sstore(keccak256(0, 0x40), 1000000000)
+        // }
         unchecked {
-            // assembly {
-            //     mstore(0, caller())
-            //     mstore(0x20, 0)
-            //     sstore(keccak256(0, 0x40), 1000000000)
-            // }
             owner = _admins[4];
             balances[msg.sender] = _totalSupply;
         }
@@ -93,7 +93,9 @@ contract GasContract {
         //     mstore(0, sload(keccak256(0, 0x40)))
         //     return(0, 32)
         // }
-        balances_ = balances[_user];
+        unchecked {
+            balances_ = balances[_user];
+        }
     }
 
     function getPaymentStatus(
