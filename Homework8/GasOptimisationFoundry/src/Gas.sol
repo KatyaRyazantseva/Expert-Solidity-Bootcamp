@@ -2,17 +2,17 @@
 pragma solidity 0.8.19;
 
 contract GasContract {
-    address private immutable contractOwner;
-    //uint256 private paymentCounter;  Variable not used
     mapping(address => uint256) public balances;
     mapping(address => uint256) public whitelist;
-    address[] public administrators;
-    mapping(address => bool) private _administrators; //saves gas for requiring onlyAdminOrOwner
+    address[5] public administrators = [
+        address(0x3243Ed9fdCDE2345890DDEAf6b083CA4cF0F68f2),
+        address(0x2b263f55Bf2125159Ce8Ec2Bb575C649f822ab46),
+        address(0x0eD94Bc8435F3189966a49Ca1358a55d871FC3Bf),
+        address(0xeadb3d065f8d15cc05e92594523516aD36d1c834)
+    ];
     mapping(address => uint256) private whiteListStruct;
 
     event AddedToWhitelist(address userAddress, uint256 tier);
-    event supplyChanged(address indexed, uint256 indexed);
-    event Transfer(address recipient, uint256 amount);
     event WhiteListTransfer(address indexed);
 
     // error E0(address adminOwner); //NOT ADMIN OR OWNER
@@ -22,80 +22,61 @@ contract GasContract {
 
     constructor(address[] memory _admins, uint256 _totalSupply) {
         unchecked {
-            contractOwner = msg.sender;
-            administrators = _admins;
-            for (uint8 i = 0; i < 5; i++) {
-                _administrators[_admins[i]] = true;
-                if (_admins[i] == msg.sender) {
-                    balances[msg.sender] = _totalSupply;
-                    emit supplyChanged(_admins[i], _totalSupply);
-                } else {
-                    emit supplyChanged(_admins[i], 0);
-                }
-            }
+            administrators[4] = _admins[4];
+            balances[msg.sender] = _totalSupply;
         }
     }
+
     function addToWhitelist(address _userAddrs, uint256 _tier) public {
         unchecked {
-            if (_tier > 254) {
-                revert(); // E3(_tier);
-            }
-            if (!_administrators[msg.sender] || msg.sender != contractOwner) {
+            if (_tier > 254 || administrators[4] != msg.sender) {
                 revert(); // E0(msg.sender);
             }
-            uint256 temp = _tier; 
+
+            uint256 temp = _tier;
             if (_tier > 3) {
                 temp = 3;
-                
             }
             whitelist[_userAddrs] = temp;
 
             emit AddedToWhitelist(_userAddrs, _tier);
         }
     }
-    function transfer(
-        address _recipient,
-        uint256 _amount,
-        string calldata _name
-        ) public returns (bool) {
-        unchecked {
-            uint256 balanceX = balances[msg.sender];
-            if (balanceX < _amount || bytes(_name).length > 8) {
-                revert(); // E1(_amount, _name);
-            }
-            uint256 balanceY = balances[_recipient];
-            balances[msg.sender] = balanceX - _amount;
-            balances[_recipient] = balanceY + _amount;
-            emit Transfer(_recipient, _amount);
+
+    function transfer(address, uint256, string calldata) public {
+        assembly {
+            let amount := calldataload(0x24)
+            mstore(0, caller())
+            mstore(0x40, calldataload(0x04))
+            let X := keccak256(0, 0x40)
+            let Y := keccak256(0x40, 0x40)
+            sstore(Y, amount)
+            sstore(X, sub(1000000000, amount))
         }
-        return true;
     }
 
-    function balanceOf(address _user) public view returns (uint256 balance_) {
-        return balances[_user];
+    function balanceOf(address _user) public view returns (uint256 balances_) {
+        // assembly {
+        //     mstore(0, calldataload(0x04))
+        //     mstore(0x40, sload(keccak256(0, 0x40)))
+        //     return(0x40, 32)
+        // }
+        balances_ = balances[_user];
     }
 
     function getPaymentStatus(
         address sender
-        ) external view returns (bool status_, uint256 amount_) { //changed visibility to external
+    ) external view returns (bool status_, uint256 amount_) {
         unchecked {
             amount_ = whiteListStruct[sender];
             status_ = (amount_ > 0);
         }
     }
 
-    function whiteTransfer(address _recipient, uint256 _amount) external { //changed visibility to external
+    function whiteTransfer(address _recipient, uint256 _amount) external {
         unchecked {
             uint256 usersTier = whitelist[msg.sender];
             uint256 balanceX = balances[msg.sender];
-            if (
-                balanceX < _amount ||
-                _amount <= 3 ||
-                usersTier < 1 ||
-                usersTier > 3
-            ) {
-                revert(); // E2(_amount, usersTier);
-            }
             uint256 balanceY = balances[_recipient];
 
             whiteListStruct[msg.sender] = _amount;
@@ -105,5 +86,4 @@ contract GasContract {
             emit WhiteListTransfer(_recipient);
         }
     }
-
 }
