@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 contract GasContract {
     address private immutable contractOwner;
-    uint256 private paymentCounter;
+    //uint256 private paymentCounter;             //Variable not used
     mapping(address => uint256) public balances;
     mapping(address => uint256) public whitelist;
     address[] public administrators;
